@@ -62,12 +62,19 @@
         </div>
       </section>
 
-      <!-- Central equity curve chart -->
+            <!-- Central equity curve chart -->
       <section class="chart-panel" aria-label="Equity curve">
+        <div class="watermark">@mrshafts</div>
         <svg id="equity-curve" viewBox="0 0 1200 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Equity curve path, gridlines, and markers drawn here via app.js -->
+          <defs>
+            <linearGradient id="curve-gradient" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#00FFA3" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#00FFA3" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
         </svg>
       </section>
+
 
       <!-- Live Trade Ledger -->
       <aside class="ledger-panel" aria-label="Live trade ledger">
