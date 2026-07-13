@@ -322,7 +322,7 @@
     });
   }
 
-      /* ---------- Preview Scaling ---------- */
+        /* ---------- Preview Scaling ---------- */
   function fitPreviewToViewport() {
     const terminal = document.getElementById('terminal');
     if (!terminal) return;
@@ -330,9 +330,13 @@
     // Calculate the scale needed to fit the screen
     const scale = Math.min(1, window.innerWidth / 1080, window.innerHeight / 1920);
     
-    // Translate pulls it back to true center, then scales it perfectly
-    terminal.style.transform = `translate(-50%, -50%) scale(${scale})`;
-    terminal.style.transformOrigin = 'center center';
+    // Calculate exact pixel offsets to center the scaled canvas
+    const xOffset = (window.innerWidth - (1080 * scale)) / 2;
+    const yOffset = (window.innerHeight - (1920 * scale)) / 2;
+    
+    // Set origin to top-left and apply math
+    terminal.style.transformOrigin = 'top left';
+    terminal.style.transform = `translate(${xOffset}px, ${yOffset}px) scale(${scale})`;
   }
 
   /* ---------- Init ---------- */
