@@ -172,7 +172,7 @@
     }
   }
 
-  function drawEquityChart(masterTL) {
+    function drawEquityChart(masterTL) {
     const svg = document.getElementById('equity-curve');
     if (!svg) return;
 
@@ -181,7 +181,7 @@
     const height = 550;
     const paddingY = 40;
 
-    // Gridlines sit behind the curve (drawn first = lower in stacking order).
+    // Gridlines sit behind the curve
     drawGridlines(svg, width, height, 4);
 
     const rng = mulberry32(CHART_SEED);
@@ -190,7 +190,6 @@
     const pathData = pointsToSmoothPath(points);
 
     const path = document.createElementNS(svgNS, 'path');
-        const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', pathData);
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', readCssVar('--color-profit') || '#00FFA3');
@@ -199,14 +198,13 @@
     path.setAttribute('stroke-linejoin', 'round');
     path.classList.add('curve-line'); // Hooks into the CSS neon glow
 
-    // Build the gradient fill shape by closing the path to the bottom corners
+    // Build the gradient fill shape
     const fillPathData = pathData + ` L${width},${height} L0,${height} Z`;
     const fillPath = document.createElementNS(svgNS, 'path');
     fillPath.setAttribute('d', fillPathData);
     fillPath.setAttribute('fill', 'url(#curve-gradient)');
     fillPath.style.opacity = 0; // Starts hidden
 
-    // Append the fill behind the main stroke line
     svg.appendChild(fillPath);
     svg.appendChild(path);
 
@@ -224,7 +222,7 @@
       0
     );
     
-    // Fade in the gradient block slowly as the timeline progresses
+    // Fade in the gradient block
     masterTL.to(
       fillPath,
       {
@@ -235,6 +233,7 @@
       0
     );
   }
+
 
   /* ---------- Live Trade Ledger ---------- */
 
