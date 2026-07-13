@@ -269,12 +269,27 @@ svg {
   grid-area: chart;
   padding: 24px;
   display: flex;
+  position: relative; /* Added to anchor the watermark */
 }
 
-.chart-panel #equity-curve {
-  width: 100%;
-  height: 100%;
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-sans);
+  font-size: 64px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+  z-index: 1;
 }
+
+/* Adds a neon glow to the line drawn by JavaScript */
+#equity-curve path.curve-line {
+  filter: drop-shadow(0 4px 12px rgba(0, 255, 163, 0.4));
+}
+
 
 /* ---------- 9. Ledger Panel ---------- */
 .ledger-panel {
