@@ -18,7 +18,7 @@
   const CHART_POINT_COUNT = 140;
   const CHART_SEED = 42; // fixed seed -> reproducible render, run to run
   const LEDGER_TRADE_COUNT = 16;
-  const LEDGER_MAX_VISIBLE = 13;
+  const LEDGER_MAX_VISIBLE = 14;
   const ASSETS = ['EUR/USD', 'XAU/USD'];
   const EQUITY_REPAINT_INTERVAL_MS = 180; // slows the visible tick rate, not the timeline
 
