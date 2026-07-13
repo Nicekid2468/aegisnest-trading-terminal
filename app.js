@@ -172,7 +172,7 @@
     const maxVal = 1500;
     const range = maxVal - minVal;
 
-    // Draw Y-Axis (Prices from $800 to $1500)
+        // Draw Y-Axis (Prices from $800 to $1500)
     const levels = 5;
     for (let i = 0; i < levels; i++) {
       const price = maxVal - (range / (levels - 1)) * i;
@@ -188,7 +188,14 @@
       svg.appendChild(line);
 
       const text = document.createElementNS(svgNS, 'text');
-      text.textContent = formatCurrency(price);
+      
+      // Short form currency logic
+      if (price >= 1000) {
+        text.textContent = '$' + parseFloat((price / 1000).toFixed(2)) + 'k';
+      } else {
+        text.textContent = '$' + Math.round(price);
+      }
+
       text.setAttribute('x', width - 10);
       text.setAttribute('y', yPos - 8);
       text.setAttribute('text-anchor', 'end');
