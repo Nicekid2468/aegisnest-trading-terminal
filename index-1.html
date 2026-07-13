@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Aegisnest Trading — Terminal</title>
+
+  <!-- Google Fonts: Roboto Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- GSAP (core) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <!-- Project styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!--
+    Fixed 1920x1080 render target for Puppeteer capture.
+    No responsive breakpoints — this frame is the video canvas.
+  -->
+  <div class="terminal" id="terminal">
+
+    <!-- ============ HEADER ============ -->
+    <header class="terminal__header">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">Aegisnest Trading</span>
+      </div>
+      <div class="clock" id="clock" aria-live="polite">00:00:00</div>
+    </header>
+
+    <!-- ============ TICKER STRIP (secondary metrics) ============ -->
+    <div class="ticker-strip" id="ticker-strip">
+      <div class="ticker" data-symbol="EURUSD">
+        <span class="ticker__symbol">EUR/USD</span>
+        <span class="ticker__price" id="price-eurusd" aria-live="polite">1.0842</span>
+        <span class="ticker__change ticker__change--up" id="change-eurusd">+0.00%</span>
+      </div>
+      <div class="ticker" data-symbol="XAUUSD">
+        <span class="ticker__symbol">XAU/USD</span>
+        <span class="ticker__price" id="price-xauusd" aria-live="polite">2384.10</span>
+        <span class="ticker__change ticker__change--up" id="change-xauusd">+0.00%</span>
+      </div>
+    </div>
+
+    <!-- ============ MAIN BODY ============ -->
+    <main class="terminal__body">
+
+      <!-- Primary metrics: Total Equity + Weekly P&L -->
+      <section class="metrics-panel" aria-label="Account metrics">
+        <div class="metric metric--equity">
+          <span class="metric__label">Total Equity</span>
+          <span class="metric__value" id="total-equity" data-value="850.00" aria-live="polite">$850.00</span>
+        </div>
+        <div class="metric metric--pnl">
+          <span class="metric__label">Weekly P&amp;L</span>
+          <span class="metric__value" id="weekly-pnl" data-value="0.00" aria-live="polite">+$0.00</span>
+        </div>
+      </section>
+
+      <!-- Central equity curve chart -->
+      <section class="chart-panel" aria-label="Equity curve">
+        <svg id="equity-curve" viewBox="0 0 1200 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Equity curve path, gridlines, and markers drawn here via app.js -->
+        </svg>
+      </section>
+
+      <!-- Live Trade Ledger -->
+      <aside class="ledger-panel" aria-label="Live trade ledger">
+        <h2 class="ledger-panel__header">Live Trade Ledger</h2>
+        <ul class="ledger-list" id="ledger-list">
+          <!-- Trade entries injected here via app.js -->
+        </ul>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- Project script -->
+  <script src="js/app.js"></script>
+</body>
+</html>
