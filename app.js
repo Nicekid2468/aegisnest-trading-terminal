@@ -167,10 +167,16 @@
     const height = 550;
     const paddingY = 40;
     
-    // Strict boundaries requested
-    const minVal = 800;
-    const maxVal = 1500;
+        // Calculate dynamic boundaries to prevent the chart from clipping
+    const allValues = [EQUITY_START, ...masterTradesData.map(t => t.equityAfter)];
+    const highestPeak = Math.max(...allValues);
+    const lowestValley = Math.min(...allValues);
+
+    // Add a padding buffer and round to clean hundreds for the axis
+    const maxVal = Math.ceil((highestPeak + 50) / 100) * 100; 
+    const minVal = Math.floor((lowestValley - 50) / 100) * 100;
     const range = maxVal - minVal;
+
 
         // Draw Y-Axis (Prices from $800 to $1500)
     const levels = 5;
