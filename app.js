@@ -18,7 +18,7 @@
   const CHART_POINT_COUNT = 140;
   const CHART_SEED = 42; // fixed seed -> reproducible render, run to run
   const LEDGER_TRADE_COUNT = 16;
-  const LEDGER_MAX_VISIBLE = 10;
+  const LEDGER_MAX_VISIBLE = 13;
   const ASSETS = ['EUR/USD', 'XAU/USD'];
   const EQUITY_REPAINT_INTERVAL_MS = 180; // slows the visible tick rate, not the timeline
 
@@ -190,12 +190,24 @@
     const pathData = pointsToSmoothPath(points);
 
     const path = document.createElementNS(svgNS, 'path');
+        const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', pathData);
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', readCssVar('--color-profit') || '#00FFA3');
     path.setAttribute('stroke-width', 3);
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('stroke-linejoin', 'round');
+    path.classList.add('curve-line'); // Hooks into the CSS neon glow
+
+    // Build the gradient fill shape by closing the path to the bottom corners
+    const fillPathData = pathData + ` L${width},${height} L0,${height} Z`;
+    const fillPath = document.createElementNS(svgNS, 'path');
+    fillPath.setAttribute('d', fillPathData);
+    fillPath.setAttribute('fill', 'url(#curve-gradient)');
+    fillPath.style.opacity = 0; // Starts hidden
+
+    // Append the fill behind the main stroke line
+    svg.appendChild(fillPath);
     svg.appendChild(path);
 
     const pathLength = path.getTotalLength();
@@ -207,7 +219,18 @@
       {
         strokeDashoffset: 0,
         duration: TIMELINE_DURATION,
-        ease: 'none', // linear draw, matches the counter's steady pace
+        ease: 'none',
+      },
+      0
+    );
+    
+    // Fade in the gradient block slowly as the timeline progresses
+    masterTL.to(
+      fillPath,
+      {
+        opacity: 1,
+        duration: TIMELINE_DURATION,
+        ease: 'none',
       },
       0
     );
@@ -267,14 +290,14 @@
       const lastRect = el.getBoundingClientRect();
       const deltaY = firstPositions[i].top - lastRect.top;
       if (deltaY) {
-        gsap.fromTo(el, { y: deltaY }, { y: 0, duration: 0.5, ease: 'power2.out' });
+        gsap.fromTo(el, { y: deltaY }, { y: 0, duration: 0.5, ease: 'back.out(1.2)' });
       }
     });
 
     gsap.fromTo(
       li,
       { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }
+      { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.2)' }
     );
   }
 
