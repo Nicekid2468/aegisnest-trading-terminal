@@ -23,13 +23,6 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Centers the fixed 1920x1080 .terminal canvas. At the exact 1920x1080
-     capture viewport there's no extra space to distribute, so this is a
-     no-op during the actual Puppeteer render — it only matters when the
-     window is smaller, e.g. previewing on a phone. */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 ul {
@@ -78,6 +71,9 @@ svg {
 .terminal {
   width: 1080px;
   height: 1920px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   overflow: hidden;
   background: var(--color-bg);
   display: grid;
