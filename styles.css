@@ -292,6 +292,14 @@ svg {
   filter: drop-shadow(0 4px 12px rgba(0, 255, 163, 0.4));
 }
 
+.chart-scale {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  fill: var(--color-text-primary);
+  font-weight: 500;
+  user-select: none;
+}
+
 
 /* ---------- 9. Ledger Panel ---------- */
 .ledger-panel {
