@@ -322,7 +322,7 @@
     });
   }
 
-    /* ---------- Preview Scaling ---------- */
+      /* ---------- Preview Scaling ---------- */
   function fitPreviewToViewport() {
     const terminal = document.getElementById('terminal');
     if (!terminal) return;
@@ -330,8 +330,8 @@
     // Calculate the scale needed to fit the screen
     const scale = Math.min(1, window.innerWidth / 1080, window.innerHeight / 1920);
     
-    // Use universal transform instead of unsupported zoom
-    terminal.style.transform = `scale(${scale})`;
+    // Translate pulls it back to true center, then scales it perfectly
+    terminal.style.transform = `translate(-50%, -50%) scale(${scale})`;
     terminal.style.transformOrigin = 'center center';
   }
 
