@@ -76,8 +76,8 @@ svg {
 
 /* ---------- 3. Video Capture Lock ---------- */
 .terminal {
-  width: 1920px;
-  height: 1080px;
+  width: 1080px;
+  height: 1920px;
   overflow: hidden;
   background: var(--color-bg);
   display: grid;
@@ -192,12 +192,12 @@ svg {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 440px;
-  grid-template-rows: 200px 1fr;
+  grid-template-columns: 1fr;
+  grid-template-rows: 250px 600px 1fr;
   grid-template-areas:
     "metrics ledger"
     "chart   ledger";
-  gap: 20px;
+  gap: 24px;
 }
 
 /* Shared panel treatment */
