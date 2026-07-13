@@ -13,8 +13,8 @@
 
   /* ---------- Config ---------- */
   const TIMELINE_DURATION = 60; // seconds
-  const EQUITY_START = 850.00;
-  const EQUITY_END = 1400.00;
+  const EQUITY_START = 841.00;
+  const EQUITY_END = 1403.57;
   const CHART_POINT_COUNT = 140;
   const CHART_SEED = 42; // fixed seed -> reproducible render, run to run
   const LEDGER_TRADE_COUNT = 16;
@@ -177,8 +177,8 @@
     if (!svg) return;
 
     const svgNS = 'http://www.w3.org/2000/svg';
-    const width = 1200;
-    const height = 500;
+    const width = 950;
+    const height = 550;
     const paddingY = 40;
 
     // Gridlines sit behind the curve (drawn first = lower in stacking order).
@@ -303,7 +303,7 @@
   function fitPreviewToViewport() {
     const terminal = document.getElementById('terminal');
     if (!terminal) return;
-    const scale = Math.min(1, window.innerWidth / 1920, window.innerHeight / 1080);
+    const scale = Math.min(1, window.innerWidth / 1080, window.innerHeight / 1920);
     terminal.style.zoom = scale;
   }
 
