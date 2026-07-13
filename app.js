@@ -322,12 +322,17 @@
     });
   }
 
-  /* ---------- Preview Scaling ---------- */
+    /* ---------- Preview Scaling ---------- */
   function fitPreviewToViewport() {
     const terminal = document.getElementById('terminal');
     if (!terminal) return;
+    
+    // Calculate the scale needed to fit the screen
     const scale = Math.min(1, window.innerWidth / 1080, window.innerHeight / 1920);
-    terminal.style.zoom = scale;
+    
+    // Use universal transform instead of unsupported zoom
+    terminal.style.transform = `scale(${scale})`;
+    terminal.style.transformOrigin = 'center center';
   }
 
   /* ---------- Init ---------- */
