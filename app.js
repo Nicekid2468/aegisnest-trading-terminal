@@ -1,31 +1,26 @@
 /* ==========================================================================
    AEGISNEST TRADING — TERMINAL DASHBOARD
-   Vanilla JS + GSAP. Drives a single 60-second master timeline:
-     - Total Equity counter ($850.00 -> $1,400.00, linear)
-     - Equity curve SVG line draw (stroke-dashoffset, linear)
-     - Live Trade Ledger feed (staggered, eased entrances)
-   The header clock runs on its own real-time setInterval, outside the
-   master timeline, since it represents "now" rather than the simulated week.
+   Vanilla JS + GSAP. 
+   Synchronized Timeline: Ledger, Chart, and Counter all pull from the same
+   master trade array so math adds up exactly to the total P&L.
    ========================================================================== */
 
 (function () {
   'use strict';
 
   /* ---------- Config ---------- */
-  const TIMELINE_DURATION = 60; // seconds
+  const TIMELINE_DURATION = 60; 
   const EQUITY_START = 841.00;
   const EQUITY_END = 1403.57;
-  const CHART_POINT_COUNT = 140;
-  const CHART_SEED = 42; // fixed seed -> reproducible render, run to run
+  const CHART_SEED = 42; 
   const LEDGER_TRADE_COUNT = 16;
   const LEDGER_MAX_VISIBLE = 14;
   const ASSETS = ['EUR/USD', 'XAU/USD'];
-  const EQUITY_REPAINT_INTERVAL_MS = 180; // slows the visible tick rate, not the timeline
+
+  // This will hold the synchronized data
+  let masterTradesData = [];
 
   /* ---------- Utilities ---------- */
-
-  // Deterministic PRNG (mulberry32) so the chart shape and trade sequence
-  // are identical on every Puppeteer render.
   function mulberry32(seed) {
     return function () {
       seed |= 0;
@@ -52,8 +47,7 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
-  /* ---------- Live Clock (independent of the master timeline) ---------- */
-
+  /* ---------- Live Clock ---------- */
   function startClock() {
     const clockEl = document.getElementById('clock');
     if (!clockEl) return;
@@ -66,23 +60,60 @@
       clockEl.textContent = `${hh}:${mm}:${ss}`;
     }
 
-    tick(); // paint immediately, don't wait for the first interval tick
+    tick();
     setInterval(tick, 1000);
   }
 
-  /* ---------- Total Equity Counter ---------- */
+  /* ---------- Master Data Generation ---------- */
+  // Distributes the exact total profit across the exact number of trades
+  function generateMasterData() {
+    const rng = mulberry32(CHART_SEED);
+    const targetProfit = EQUITY_END - EQUITY_START;
+    let rawSum = 0;
 
+    masterTradesData = [];
+    
+    // Generate base weights for trades
+    for (let i = 0; i < LEDGER_TRADE_COUNT; i++) {
+      const isProfit = rng() < 0.65;
+      const weight = (rng() * 40 + 10) * (isProfit ? 1 : -0.6);
+      masterTradesData.push({
+        asset: ASSETS[rng() < 0.5 ? 0 : 1],
+        action: rng() < 0.5 ? 'BUY' : 'SELL',
+        rawWeight: weight
+      });
+      rawSum += weight;
+    }
+
+    // Scale weights so they equal the exact target profit
+    const scaleMultiplier = targetProfit / rawSum;
+    let runningEquity = EQUITY_START;
+
+    masterTradesData.forEach((trade, i) => {
+      let pnl = trade.rawWeight * scaleMultiplier;
+      pnl = Math.round(pnl * 100) / 100;
+      
+      // Force the final trade to absorb any rounding errors
+      if (i === LEDGER_TRADE_COUNT - 1) {
+        pnl = Math.round((EQUITY_END - runningEquity) * 100) / 100;
+      }
+      
+      trade.pnl = pnl;
+      runningEquity += pnl;
+      trade.equityAfter = Math.round(runningEquity * 100) / 100;
+    });
+  }
+
+  /* ---------- Total Equity Counter ---------- */
   function animateEquityCounter(masterTL) {
     const equityEl = document.getElementById('total-equity');
     const pnlEl = document.getElementById('weekly-pnl');
     const pnlMetric = pnlEl ? pnlEl.closest('.metric') : null;
 
     const counter = { value: EQUITY_START };
-    let lastRepaint = 0;
 
     function paint() {
       if (equityEl) equityEl.textContent = formatCurrency(counter.value);
-
       if (pnlEl) {
         const pnl = counter.value - EQUITY_START;
         pnlEl.textContent = formatSignedCurrency(pnl);
@@ -90,55 +121,25 @@
       }
     }
 
-    masterTL.to(
-      counter,
-      {
-        value: EQUITY_END,
-        duration: TIMELINE_DURATION,
-        ease: 'none', // linear: steady passage of the trading week
-        onUpdate: () => {
-          // The tween itself still runs every frame — only the DOM repaint
-          // is throttled, so the digits change in readable steps instead
-          // of blurring past every 16ms.
-          const now = performance.now();
-          if (now - lastRepaint >= EQUITY_REPAINT_INTERVAL_MS) {
-            lastRepaint = now;
-            paint();
-          }
+    paint();
+    const segmentDuration = TIMELINE_DURATION / LEDGER_TRADE_COUNT;
+
+    // Tween point-to-point so the number perfectly syncs with the trades
+    masterTradesData.forEach((trade, i) => {
+      masterTL.to(
+        counter,
+        {
+          value: trade.equityAfter,
+          duration: segmentDuration,
+          ease: 'none',
+          onUpdate: paint
         },
-        onComplete: paint, // guarantee the exact final value lands, unthrottled
-      },
-      0
-    );
+        i * segmentDuration
+      );
+    });
   }
 
   /* ---------- Equity Curve Chart ---------- */
-
-  function generateEquityCurveValues(pointCount, startValue, endValue, rng) {
-    const values = new Array(pointCount);
-    values[0] = startValue;
-    const perStepDrift = (endValue - startValue) / (pointCount - 1);
-
-    for (let i = 1; i < pointCount - 1; i++) {
-      const noise = (rng() - 0.5) * Math.abs(perStepDrift) * 10;
-      values[i] = values[i - 1] + perStepDrift + noise;
-    }
-    values[pointCount - 1] = endValue; // land exactly on the target
-    return values;
-  }
-
-  function mapValuesToPoints(values, width, height, paddingY) {
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = max - min || 1;
-
-    return values.map((v, i) => ({
-      x: (i / (values.length - 1)) * width,
-      y: height - paddingY - ((v - min) / range) * (height - paddingY * 2),
-    }));
-  }
-
-  // Smooths a point array into a cubic-bezier SVG path (Catmull-Rom conversion).
   function pointsToSmoothPath(points) {
     let d = `M${points[0].x},${points[0].y}`;
     for (let i = 0; i < points.length - 1; i++) {
@@ -157,22 +158,7 @@
     return d;
   }
 
-  function drawGridlines(svg, width, height, lineCount) {
-    const svgNS = 'http://www.w3.org/2000/svg';
-    for (let i = 1; i < lineCount; i++) {
-      const y = (height / lineCount) * i;
-      const line = document.createElementNS(svgNS, 'line');
-      line.setAttribute('x1', 0);
-      line.setAttribute('x2', width);
-      line.setAttribute('y1', y);
-      line.setAttribute('y2', y);
-      line.setAttribute('stroke', 'rgba(255,255,255,0.05)');
-      line.setAttribute('stroke-width', 1);
-      svg.appendChild(line);
-    }
-  }
-
-    function drawEquityChart(masterTL) {
+  function drawEquityChart(masterTL) {
     const svg = document.getElementById('equity-curve');
     if (!svg) return;
 
@@ -180,13 +166,60 @@
     const width = 950;
     const height = 550;
     const paddingY = 40;
+    
+    // Strict boundaries requested
+    const minVal = 800;
+    const maxVal = 1500;
+    const range = maxVal - minVal;
 
-    // Gridlines sit behind the curve
-    drawGridlines(svg, width, height, 4);
+    // Draw Y-Axis (Prices from $800 to $1500)
+    const levels = 5;
+    for (let i = 0; i < levels; i++) {
+      const price = maxVal - (range / (levels - 1)) * i;
+      const yPos = paddingY + ((height - paddingY * 2) / (levels - 1)) * i;
 
-    const rng = mulberry32(CHART_SEED);
-    const values = generateEquityCurveValues(CHART_POINT_COUNT, EQUITY_START, EQUITY_END, rng);
-    const points = mapValuesToPoints(values, width, height, paddingY);
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', 0);
+      line.setAttribute('x2', width);
+      line.setAttribute('y1', yPos);
+      line.setAttribute('y2', yPos);
+      line.setAttribute('stroke', 'rgba(255,255,255,0.05)');
+      line.setAttribute('stroke-width', 1);
+      svg.appendChild(line);
+
+      const text = document.createElementNS(svgNS, 'text');
+      text.textContent = formatCurrency(price);
+      text.setAttribute('x', width - 10);
+      text.setAttribute('y', yPos - 8);
+      text.setAttribute('text-anchor', 'end');
+      text.setAttribute('class', 'chart-scale');
+      svg.appendChild(text);
+    }
+
+    // Draw X-Axis (Days of the week)
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+    days.forEach((day, index) => {
+      const text = document.createElementNS(svgNS, 'text');
+      text.textContent = day;
+      const xPos = index === 0 ? 0 : index === 4 ? width - 35 : (width / 4) * index - 15;
+      text.setAttribute('x', xPos);
+      text.setAttribute('y', height - 5);
+      text.setAttribute('class', 'chart-scale');
+      svg.appendChild(text);
+    });
+
+    // Map the synchronized trades directly to X/Y coordinates
+    const points = [{
+      x: 0,
+      y: paddingY + ((height - paddingY * 2) / range) * (maxVal - EQUITY_START)
+    }];
+
+    masterTradesData.forEach((trade, i) => {
+      const xPct = (i + 1) / LEDGER_TRADE_COUNT;
+      const yPos = paddingY + ((height - paddingY * 2) / range) * (maxVal - trade.equityAfter);
+      points.push({ x: xPct * width, y: yPos });
+    });
+
     const pathData = pointsToSmoothPath(points);
 
     const path = document.createElementNS(svgNS, 'path');
@@ -196,14 +229,13 @@
     path.setAttribute('stroke-width', 3);
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('stroke-linejoin', 'round');
-    path.classList.add('curve-line'); // Hooks into the CSS neon glow
+    path.classList.add('curve-line'); 
 
-    // Build the gradient fill shape
     const fillPathData = pathData + ` L${width},${height} L0,${height} Z`;
     const fillPath = document.createElementNS(svgNS, 'path');
     fillPath.setAttribute('d', fillPathData);
     fillPath.setAttribute('fill', 'url(#curve-gradient)');
-    fillPath.style.opacity = 0; // Starts hidden
+    fillPath.style.opacity = 0; 
 
     svg.appendChild(fillPath);
     svg.appendChild(path);
@@ -212,40 +244,11 @@
     path.style.strokeDasharray = pathLength;
     path.style.strokeDashoffset = pathLength;
 
-    masterTL.to(
-      path,
-      {
-        strokeDashoffset: 0,
-        duration: TIMELINE_DURATION,
-        ease: 'none',
-      },
-      0
-    );
-    
-    // Fade in the gradient block
-    masterTL.to(
-      fillPath,
-      {
-        opacity: 1,
-        duration: TIMELINE_DURATION,
-        ease: 'none',
-      },
-      0
-    );
+    masterTL.to(path, { strokeDashoffset: 0, duration: TIMELINE_DURATION, ease: 'none' }, 0);
+    masterTL.to(fillPath, { opacity: 1, duration: TIMELINE_DURATION, ease: 'none' }, 0);
   }
-
 
   /* ---------- Live Trade Ledger ---------- */
-
-  function generateTrade(rng) {
-    const asset = ASSETS[rng() < 0.55 ? 0 : 1];
-    const action = rng() < 0.5 ? 'BUY' : 'SELL';
-    const isProfit = rng() < 0.7; // mostly winning trades, occasional loss
-    const magnitude = 4 + rng() * 38;
-    const pnl = isProfit ? magnitude : -magnitude * 0.6;
-    return { asset, action, pnl };
-  }
-
   function buildLedgerItem(trade) {
     const li = document.createElement('li');
     li.className = 'ledger-item';
@@ -267,9 +270,6 @@
     return li;
   }
 
-  // Adds a trade row at the top of the ledger. Uses a manual FLIP so existing
-  // rows visibly settle downward instead of snapping, and the new row
-  // fades in with a slide-up.
   function addTradeToLedger(trade) {
     const list = document.getElementById('ledger-list');
     if (!list) return;
@@ -285,7 +285,7 @@
     }
 
     existingItems.forEach((el, i) => {
-      if (!el.isConnected) return; // dropped by the max-visible cap
+      if (!el.isConnected) return; 
       const lastRect = el.getBoundingClientRect();
       const deltaY = firstPositions[i].top - lastRect.top;
       if (deltaY) {
@@ -301,27 +301,15 @@
   }
 
   function scheduleLedgerFeed(masterTL) {
-    const rng = mulberry32(CHART_SEED + 1); // different stream than the chart
-    const startBuffer = 2;
-    const endBuffer = 2;
-    const activeWindow = TIMELINE_DURATION - startBuffer - endBuffer;
-    const slot = activeWindow / LEDGER_TRADE_COUNT;
-
-    for (let i = 0; i < LEDGER_TRADE_COUNT; i++) {
-      const time = startBuffer + i * slot + rng() * slot * 0.8;
-      const trade = generateTrade(rng);
+    const segmentDuration = TIMELINE_DURATION / LEDGER_TRADE_COUNT;
+    masterTradesData.forEach((trade, i) => {
+      // Trade appears exactly as the drawing line reaches that specific node
+      const time = (i + 1) * segmentDuration;
       masterTL.call(addTradeToLedger, [trade], time);
-    }
+    });
   }
 
-  /* ---------- Preview Scaling (browser preview only) ----------
-     The dashboard is a fixed 1920x1080 frame for Puppeteer capture, not a
-     responsive page. On a phone browser the layout renders near actual
-     size, so the ledger column sits off-screen to the right until you
-     scroll. This scales the whole frame down to fit whatever window it's
-     actually sitting in, purely so it's visible while previewing.
-     At exactly 1920px wide (i.e. Puppeteer's viewport) the scale is 1,
-     so this has no effect on the captured video. */
+  /* ---------- Preview Scaling ---------- */
   function fitPreviewToViewport() {
     const terminal = document.getElementById('terminal');
     if (!terminal) return;
@@ -330,11 +318,12 @@
   }
 
   /* ---------- Init ---------- */
-
   document.addEventListener('DOMContentLoaded', () => {
     startClock();
     fitPreviewToViewport();
     window.addEventListener('resize', fitPreviewToViewport);
+
+    generateMasterData();
 
     const masterTL = gsap.timeline();
     animateEquityCounter(masterTL);
@@ -342,3 +331,4 @@
     scheduleLedgerFeed(masterTL);
   });
 })();
+         
