@@ -195,8 +195,9 @@ svg {
   grid-template-columns: 1fr;
   grid-template-rows: 250px 600px 1fr;
   grid-template-areas:
-    "metrics ledger"
-    "chart   ledger";
+    "metrics"
+    "chart"
+   "ledger";
   gap: 24px;
 }
 
@@ -243,7 +244,7 @@ svg {
 
 .metric--equity .metric__value {
   font-family: var(--font-mono);
-  font-size: 72px;
+  font-size: 96px;
   font-weight: 700;
   color: var(--color-text-primary);
   letter-spacing: -0.01em;
